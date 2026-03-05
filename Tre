@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Acid Glitch Lab</title>
+
+<style>
+
+body{
+background:black;
+color:white;
+font-family:Arial;
+text-align:center;
+}
+
+canvas{
+border:1px solid white;
+margin-top:10px;
+max-width:90%;
+}
+
+.controls{
+width:300px;
+margin:auto;
+text-align:left;
+}
+
+input{
+width:100%;
+}
+
+button{
+margin-top:10px;
+padding:10px;
+width:100%;
+background:#222;
+color:white;
+border:1px solid white;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>Acid Glitch Lab</h2>
+
+<input type="file" id="upload">
+
+<br>
+
+<canvas id="canvas"></canvas>
+
+<div class="controls">
+
+<label>Block Corruption</label>
+<input type="range" id="blocks" min="0" max="100" value="20">
+
+<label>RGB Shift</label>
+<input type="range" id="rgb" min="0" max="50" value="5">
+
+<label>Fragment Scatter</label>
+<input type="range" id="scatter" min="0" max="200" value="30">
+
+<label>Scan Smear</label>
+<input type="range" id="smear" min="0" max="50" value="5">
+
+<label>Contour Lines</label>
+<input type="range" id="contour" min="0" max="100" value="10">
+
+<button onclick="glitch()">Render Glitch</button>
+
+<button onclick="randomize()">Randomize</button>
+
+<button onclick="exportImage()">Export PNG</button>
+
+</div>
+
+<script>
+
+const canvas = document.getElementById("canvas")
+const ctx = canvas.getContext("2d")
+
+let img = new Image()
+
+document.getElementById("upload").onchange = e => {
+
+const file = e.target.files[0]
+img.src = URL.createObjectURL(file)
+
+}
+
+img.onload = () => {
+
+canvas.width = img.width
+canvas.height = img.height
+
+ctx.drawImage(img,0,0)
+
+}
+
+function glitch(){
+
+ctx.drawImage(img,0,0)
+
+let imageData = ctx.getImageData(0,0,canvas.width,canvas.height)
+let data = imageData.data
+
+let blocks = document.getElementById("blocks").value/100
+let rgb = document.getElementById("rgb").value
+let scatter = document.getElementById("scatter").value
+let smear = document.getElementById("smear").value
+let contour = document.getElementById("contour").value
+
+for(let i=0;i<data.length;i+=4){
+
+if(Math.random()<blocks){
+
+data[i]=Math.random()*255
+data[i+1]=Math.random()*255
+data[i+2]=Math.random()*255
+
+}
+
+}
+
+ctx.putImageData(imageData,0,0)
+
+rgbShift(rgb)
+
+fragmentScatter(scatter)
+
+scanSmear(smear)
+
+drawContours(contour)
+
+}
+
+function rgbShift(amount){
+
+let r = ctx.getImageData(amount,0,canvas.width,canvas.height)
+let g = ctx.getImageData(0,0,canvas.width,canvas.height)
+let b = ctx.getImageData(-amount,0,canvas.width,canvas.height)
+
+for(let i=0;i<r.data.length;i+=4){
+
+g.data[i] = r.data[i]
+g.data[i+2] = b.data[i+2]
+
+}
+
+ctx.putImageData(g,0,0)
+
+}
+
+function fragmentScatter(amount){
+
+for(let i=0;i<amount;i++){
+
+let x = Math.random()*canvas.width
+let y = Math.random()*canvas.height
+let w = Math.random()*50
+let h = Math.random()*50
+
+let piece = ctx.getImageData(x,y,w,h)
+
+ctx.putImageData(piece,
+x+(Math.random()-0.5)*100,
+y+(Math.random()-0.5)*100)
+
+}
+
+}
+
+function scanSmear(amount){
+
+for(let i=0;i<amount;i++){
+
+let y = Math.random()*canvas.height
+
+ctx.drawImage(
+canvas,
+0,y,
+canvas.width,2,
+Math.random()*20,
+y,
+canvas.width,
+2)
+
+}
+
+}
+
+function drawContours(level){
+
+ctx.strokeStyle="pink"
+
+for(let i=0;i<level;i++){
+
+ctx.strokeRect(
+Math.random()*canvas.width,
+Math.random()*canvas.height,
+Math.random()*200,
+Math.random()*200)
+
+}
+
+}
+
+function randomize(){
+
+document.getElementById("blocks").value = Math.random()*100
+document.getElementById("rgb").value = Math.random()*50
+document.getElementById("scatter").value = Math.random()*200
+document.getElementById("smear").value = Math.random()*50
+document.getElementById("contour").value = Math.random()*100
+
+glitch()
+
+}
+
+function exportImage(){
+
+let link=document.createElement("a")
+
+link.download="glitch.png"
+link.href=canvas.toDataURL()
+
+link.click()
+
+}
+
+</script>
+
+</body>
+</html>
